@@ -51,7 +51,7 @@ def update_screen(grid):
     """
     clear_terminal()
     print bcolors.RED + ' GAME OF LIFE' + bcolors.ENDC
-    print bcolors.YELLOW + '-'*( len(grid[0]) + 5)+ bcolors.ENDC
+    print bcolors.YELLOW + '-'*( len(grid[0]) + 5) + bcolors.ENDC
     print
     for i, line in enumerate(grid):
         print bcolors.BLUE + '%3d ' % i + bcolors.ENDC,
@@ -61,7 +61,7 @@ def update_screen(grid):
             else:
                 sys.stdout.write('0')
         print
-    print '-' * ( len(grid[0]) + 5 )
+    print bcolors.YELLOW + '-' * ( len(grid[0]) + 5 ) + bcolors.ENDC
 
 def read_initial_conf(grid):
     """ read_initial_conf: Reads coordinates from the user to configure the
@@ -81,7 +81,7 @@ def read_initial_conf(grid):
             # Read user's command
             cmd = raw_input()
             # Break if user is finished
-            if cmd == 'start':
+            if cmd == 'start' or cmd == '':
                 done = True
                 break
             try:
