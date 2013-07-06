@@ -1,9 +1,19 @@
 import sys
+import curses
+import locale
 from terminal import *
 
 def main():
-    # Define grid
+    # Start curses screen and enable colors
+    stdscr = curses.initscr()
+    curses.start_color()
+    # React to keys instantly
+    curses.cbreak()
+
+    # Get terminal size
     (width, height) = get_term_size()
+
+    # Define grid
     grid = [(width-5)*[0] for i in range(height-5)]
 
     # Make initial grid be Conway's R-pentomino
@@ -14,19 +24,26 @@ def main():
     grid[len(grid)/2 + 0][len(grid[0])/2 - 1] = 1
 
     # Draw initial grid
-    update_screen(grid)
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    stdscr.addstr(0, width/2-5, 'GAME OF LIFE', curses.color_pair(1))
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    stdscr.addstr(1, 0, '-'*( len(grid[0]) + 5), curses.color_pair(2))
+    update_screen(grid, stdscr)
+    stdscr.addstr(len(grid)+2, 0, '-'*( len(grid[0]) + 5), curses.color_pair(2))
 
     # Read initial config
-    read_initial_conf(grid)
+    read_initial_conf(grid, stdscr)
 
     # Step through grid
     prompt = ('ITER %d: Type anything to continue, the number of steps to ' + 
               'perform (or quit to exit): ')
     iter_step = 1
-    update_screen(grid)
+    update_screen(grid, stdscr)
     while True:
         # Wait for user
-        play = raw_input('%s' % (prompt % iter_step))
+        stdscr.addstr(len(grid)+3, 0, '%s' % (prompt % iter_step))
+        stdscr.clrtoeol()
+        play = stdscr.getstr()
         if play == 'quit':
             break
         try:
@@ -41,29 +58,31 @@ def main():
             next_step(grid, new_grid)
             grid, new_grid = new_grid, grid
             # Print updated grid
-            update_screen(grid)
+            update_screen(grid, stdscr)
         iter_step += batch_steps
 
+    # Retore terminal settings and clean up
+    curses.nocbreak(); stdscr.keypad(0); curses.echo()
+    curses.endwin()
 
-def update_screen(grid):
+    return 0
+
+def update_screen(grid, stdscr):
     """ update_screen: Takes the grid and updates the terminal to display it.
     (Making this function more efficient and informative is a to-do)
     """
-    clear_terminal()
-    print bcolors.RED + ' GAME OF LIFE' + bcolors.ENDC
-    print bcolors.YELLOW + '-'*( len(grid[0]) + 5) + bcolors.ENDC
-    print
+    curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_RED, curses.COLOR_RED)
     for i, line in enumerate(grid):
-        print bcolors.BLUE + '%3d ' % i + bcolors.ENDC,
-        for element in line:
+        stdscr.addstr(2+i, 0, '%3d'%i, curses.color_pair(4))
+        for j, element in enumerate(line):
             if element:
-                sys.stdout.write(bcolors.RED + str(element) + bcolors.ENDC)
+                stdscr.addstr(2+i, 4+j, str(element), curses.color_pair(5))
             else:
-                sys.stdout.write('0')
-        print
-    print bcolors.YELLOW + '-' * ( len(grid[0]) + 5 ) + bcolors.ENDC
+                stdscr.addstr(2+i, 4+j, '-')
+    stdscr.refresh()
 
-def read_initial_conf(grid):
+def read_initial_conf(grid, stdscr):
     """ read_initial_conf: Reads coordinates from the user to configure the
     initial game's grid.
     It takes an already defined grid and modifies it according to user input.
@@ -76,10 +95,14 @@ def read_initial_conf(grid):
     while True:
         # While input isn't valid, try reading and parsing it
         coord = []
-        sys.stdout.write(prompt % (config_step, last_coord))
+        curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        stdscr.addstr(len(grid)+3, 0, prompt % (config_step, last_coord),
+                                                    curses.color_pair(3))
+        stdscr.clrtoeol()
+
         while coord == []:
             # Read user's command
-            cmd = raw_input()
+            cmd = stdscr.getstr()
             # Break if user is finished
             if cmd == 'start' or cmd == '':
                 done = True
@@ -88,9 +111,11 @@ def read_initial_conf(grid):
                 cmd = cmd.split()
                 coord = [int(cmd[i]) for i in range(2)]
             except:
-                sys.stdout.write(bcolors.RED + '[Invalid input] %s' %
-                                 (prompt % (config_step, last_coord)) 
-                                 + bcolors.ENDC)
+                curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
+                stdscr.addstr(len(grid)+3, 0, '[Invalid input] %s' %
+                                 (prompt % (config_step, last_coord)),
+                                 curses.color_pair(3))
+                stdscr.clrtoeol()
             last_coord = str(coord)
             config_step += 1
         # Total break if user is finished
@@ -98,7 +123,7 @@ def read_initial_conf(grid):
             break
         # Update grid (it actually toggles the grid position provided)
         grid [coord[1]][coord[0]] = (grid[coord[1]][coord[0]] + 1) % 2
-        update_screen(grid)
+        update_screen(grid, stdscr)
 
 def next_step(grid, new_grid):
     """ next_step: Computes the grid's next step and stores it in the list
