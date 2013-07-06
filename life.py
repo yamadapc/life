@@ -20,8 +20,8 @@ def main():
     read_initial_conf(grid)
 
     # Step through grid
-    play = ''
-    prompt = 'ITER %d: Type anything to continue, the number of steps to perform (or quit to exit): '
+    prompt = ('ITER %d: Type anything to continue, the number of steps to ' + 
+              'perform (or quit to exit): ')
     iter_step = 1
     update_screen(grid)
     while True:
@@ -46,6 +46,9 @@ def main():
 
 
 def update_screen(grid):
+    """ update_screen: Takes the grid and updates the terminal to display it.
+    (Making this function more efficient and informative is a to-do)
+    """
     clear_terminal()
     print bcolors.RED + ' GAME OF LIFE' + bcolors.ENDC
     print bcolors.YELLOW + '-'*( len(grid[0]) + 5)+ bcolors.ENDC
